@@ -2,8 +2,8 @@ use super::SortOrder;
 use std::cmp::Ordering;
 
 pub fn sort_by<T, F>(x: &mut [T], comparator: &F) -> Result<(),String> where F: Fn(&T, &T) -> Ordering {
-    if is_power_of_two(x.len()) {
-        do_sort(x, truem comparator);
+    if x.len().is_power_of_two() {
+        do_sort(x, true, comparator);
         Ok(())
     } else {
         Err(format!("The length of x is not a power of two. (x.len(): {})", x.len()))
@@ -18,10 +18,9 @@ pub fn sort<T: Ord>(x: &mut [T], order: &SortOrder) -> Result<(), String> {
     match *order {
         SortOrder::Ascending  => sort_by(x, &|a, b| a.cmp(b)),
         SortOrder::Descending => sort_by(x, &|a, b| b.cmp(a)),
-    };
-    Ok(())
+    }
 }
-fn  do_sort<T: Ord>(x: &mut [T], forward: bool, comparator: &F) 
+fn  do_sort<T, F>(x: &mut [T], forward: bool, comparator: &F) 
 where F: Fn(&T, &T) -> Ordering 
 {
     if x.len() > 1 {
@@ -32,26 +31,36 @@ where F: Fn(&T, &T) -> Ordering
     }
 }
 
-fn sub_sort<T: Ord>(x: &mut [T], up: bool) {
+fn sub_sort<T, F>(x: &mut [T], forward: bool, comparator: &F) 
+where F: Fn(&T, &T) -> Ordering
+{
     if x.len() > 1 {
-        compare_and_swap(x,up);
+        compare_and_swap(x,forward, comparator);
         let mid_point = x.len() / 2;
-        sub_sort(&mut x[..mid_point], up);
-        sub_sort(&mut x[mid_point..], up);
+        sub_sort(&mut x[..mid_point], forward,comparator);
+        sub_sort(&mut x[mid_point..], forward, comparator);
     }
 }
 
-fn compare_and_swap<T: Ord>(x: &mut [T], up: bool) {
+fn compare_and_swap<T, F>(x: &mut [T], forward: bool, comparator: &F)
+where F: Fn(&T, &T) -> Ordering
+{
+    let swap_condition = if forward {
+        Ordering::Greater
+    } else {
+        Ordering::Less
+    };
     let mid_point = x.len() / 2;
     for i in 0..mid_point {
-        if (x[i] > x[mid_point + i]) == up {
+        if comparator(&x[i], &x[mid_point + i]) == swap_condition {
             x.swap(i, mid_point + i);
         }
     }
 }
 #[cfg(test)]
 mod tests {
-    use super::{is_power_of_two, sort, sort_by};
+//    use super::{is_power_of_two, sort, sort_by};
+    use super::{sort, sort_by};
     use crate::SortOrder::*;
     #[test]
     fn sort_students_by_age_ascending() {
@@ -65,7 +74,7 @@ mod tests {
         assert_eq!(sort_by(&mut x, &|a, b| a.age.cmp(&b.age)), Ok(()));
         assert_eq!(x, expected);
     }
-    
+    #[test]
     fn sort_students_by_name_ascending() {
         let taro = Student::new("Taro", "Yamada", 16);
         let hanako = Student::new("Hanako", "Yamada", 14);
@@ -100,6 +109,7 @@ mod tests {
         let mut x = vec![10, 30, 11]; 
         assert!(sort(&mut x, &Ascending).is_err());
     }
+    #[derive(Debug, PartialEq)]
     struct Student {
         first_name: String,
         last_name: String,
