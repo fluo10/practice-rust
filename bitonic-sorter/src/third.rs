@@ -62,6 +62,20 @@ mod tests {
 //    use super::{is_power_of_two, sort, sort_by};
     use super::{sort, sort_by};
     use crate::SortOrder::*;
+    use crate::utils::{new_u32_vec, is_sorted_ascending, is_sorted_descending};
+    #[test]
+    fn sort_u32_large() {
+        {
+            let mut x = new_u32_vec(65536);
+            assert_eq!(sort(&mut x, &Ascending), Ok(()));
+            assert!(is_sorted_ascending(&x));
+        }
+        {
+            let mut x = new_u32_vec(65536);
+            assert_eq!(sort(&mut x, &Descending), Ok(()));
+            assert!(is_sorted_descending(&x));
+        }
+    }
     #[test]
     fn sort_students_by_age_ascending() {
         let taro = Student::new("Taro", "Yamada", 16);
